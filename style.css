@@ -1,0 +1,9 @@
+body, p, h1, h2, h3, h4, h5 {
+  font-family: 'OpenDyslexic', Arial, sans-serif !important;
+  background: #F9F9F9 !important;
+  color: #222 !important;
+}
+
+img, video {
+  filter: brightness(90%) contrast(95%);
+}
