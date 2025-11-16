@@ -14,7 +14,8 @@ const DEFAULT_SETTINGS = {
   moodMethod: "rules",
   showListeningTime: true,
   targetMinutes: 25,
-  enableSummary: false
+  enableSummary: false,
+  audioOnlyMode: true
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -43,11 +44,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else {
       removeAllExtensionEffects();
     }
-    sendResponse && sendResponse({ ok: true });
+    if (sendResponse) sendResponse({ ok: true });
     return;
   }
-
-  // You could add more message types here if needed
 });
 
 // --------------------------
@@ -125,7 +124,69 @@ function applyAll() {
   if (currentSettings.enableSummary) {
     applySummaryBox(currentSettings);
   }
+
+  if (currentSettings.audioOnlyMode && hostKey === "music.youtube.com") {
+    applyAudioOnlyMode();
+  }
 }
+
+// ===========================================================
+// Audio-only mode for YouTube Music
+// Replaces video with the album cover from the bottom player bar
+// ===========================================================
+function applyAudioOnlyMode() {
+  const host = window.location.hostname;
+  if (host !== "music.youtube.com") return;
+
+  // Remove any video elements
+  const videoSelectors = [
+    "video",
+    "#song-video",
+    "ytmusic-fullerscreen-video",
+    "ytmusic-player-video",
+    ".html5-video-container",
+    "video.html5-main-video"
+  ];
+  videoSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => {
+      try { el.pause(); } catch(e){}
+      el.remove();
+    });
+  });
+
+  // Remove ad objects too
+  const adSelectors = [
+    "ytmusic-player-ads-renderer",
+    "ytmusic-music-video-ads-renderer",
+    ".ytp-ad-player-overlay",
+    ".ytp-ad-image-overlay",
+    ".ytp-ad-text-overlay",
+    ".ytp-ad-module",
+    "iframe[src*='doubleclick']"
+  ];
+  adSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => el.remove());
+  });
+
+  // Find album cover from player bar
+  const art = document.querySelector("ytmusic-player-bar img.image");
+  if (!art) return;
+
+  // Target the main video area container
+  const container = document.querySelector("#song-media-window");
+  if (!container) return;
+
+  // Avoid duplicating generated artwork
+  if (container.querySelector(".nf-audio-cover")) return;
+
+  // Clear video & insert album art
+  container.innerHTML = "";
+  const img = document.createElement("img");
+  img.src = art.src;
+  img.className = "nf-audio-cover";
+  container.appendChild(img);
+}
+
 
 // --------------------------
 // Distraction removal
@@ -136,19 +197,29 @@ function applyDistractionRemoval(settings) {
 
   // ------------ YouTube Music ------------
   if (host === "music.youtube.com") {
-    // Hide upsell banners
+    // Hide upsell banners / promos (updated selectors)
     if (settings.hidePromos) {
-      document
-        .querySelectorAll(
-          "ytmusic-upsell-dialog, ytmusic-premium-upsell, .ytmusic-promo-banner"
-        )
-        .forEach((el) => el.remove());
+      const promoSelectors = [
+        "ytmusic-upsell-dialog",
+        "ytmusic-premium-upsell",
+        ".ytmusic-promo-banner",
+        "ytmusic-mealbar-promo-renderer",
+        "ytmusic-promo-banner-renderer",
+        "ytmusic-player-page-upsell",
+        "#upsell-dialog",
+        "ytmusic-download-app-promo-renderer",
+        "ytmusic-pbs-browse-section-renderer",
+        "ytmusic-ad-slot-renderer"
+      ];
+      promoSelectors.forEach((sel) => {
+        document.querySelectorAll(sel).forEach((el) => el.remove());
+      });
     }
 
     // Reduce motion: pause animated thumbnails / visualisers
     if (settings.reduceMotion) {
       document
-        .querySelectorAll("video, canvas.animated-artwork")
+        .querySelectorAll("video, canvas, canvas.animated-artwork")
         .forEach((el) => {
           el.style.animationPlayState = "paused";
           if (el.tagName === "VIDEO") {
@@ -161,19 +232,47 @@ function applyDistractionRemoval(settings) {
       document.documentElement.style.scrollBehavior = "auto";
     }
 
-    // Minimal layout: hide sidebars, carousels, background images
+    // Minimal layout: hide sidebars, carousels, shelves, chips, etc. (updated DOM)
     if (settings.minimalLayout) {
       document.body.classList.add("nf-minimal-layout");
 
-      const toHide = [
-        "ytmusic-guide-renderer", // left nav
-        "ytmusic-carousel-shelf-renderer", // homepage shelves
-        "ytmusic-player-bar-background", // large art
-        ".ytmusic-related-panel", // related tracks (if present)
-        ".ytmusic-comments-panel" // comments (if present)
+      const hideSelectors = [
+        // Left navigation
+        "ytmusic-guide-renderer",
+
+        // Carousels / shelves / sections (Welcome Joshua, quick picks, etc.)
+        "ytmusic-carousel-shelf-renderer",
+        "ytmusic-carousel-shelf-basic-header-renderer",
+        "ytmusic-carousel-shelf-backdrop-renderer",
+        "ytmusic-carousel-shelf-item-renderer",
+        "ytmusic-section-list-renderer",
+        "ytmusic-item-section-renderer",
+        "ytmusic-shelf-renderer",
+        "ytmusic-section-list-renderer[fullbed]",
+        "ytmusic-section-list-renderer[page-type='MUSIC_HOME']",
+        "ytmusic-rich-item-renderer",
+        "ytmusic-browse-response",
+
+        // Chips (Podcasts, Energize, Relax, etc.)
+        "ytmusic-chip-cloud-renderer",
+        "ytmusic-chip-cloud-chip-renderer",
+
+        // Generic headers / banners
+        "ytmusic-responsive-header-renderer",
+        "ytmusic-section-carousel-shelf-renderer",
+
+        // Large player background art
+        "ytmusic-player-bar-background",
+
+        // Misc related panels (if present)
+        ".ytmusic-related-panel",
+        ".ytmusic-comments-panel",
+
+        // Tabs / top navigation content on some pages
+        "#tabsContent"
       ];
 
-      toHide.forEach((sel) => {
+      hideSelectors.forEach((sel) => {
         document.querySelectorAll(sel).forEach((el) => {
           el.classList.add("nf-hidden-element");
         });
@@ -324,6 +423,15 @@ function applyDistractionRemoval(settings) {
 function applyMoodFilter(settings) {
   const hostKey = getHostKey();
   const tiles = findMusicTiles(hostKey);
+  console.log("Mood filter running on tiles:", tiles.length);
+
+  chrome.runtime.sendMessage(
+    {
+      type: "CLASSIFY_MOOD",
+      payload: { text: "This is a very sad emotional breakup song", method: "rules" }
+    },
+    (res) => console.log("TEST classifier →", res)
+  );
 
   tiles.forEach((tile) => {
     if (tile.el.dataset.nfMoodProcessed === "1") return;
@@ -581,7 +689,9 @@ function findSummaryTarget(hostKey) {
   }
 
   if (hostKey === "open.spotify.com") {
-    return document.querySelector("[data-testid='playlist-page'], [data-testid='album-page']");
+    return document.querySelector(
+      "[data-testid='playlist-page'], [data-testid='album-page']"
+    );
   }
 
   if (hostKey === "soundcloud.com") {
@@ -614,7 +724,8 @@ function collectSummaryText(hostKey) {
       .querySelectorAll(
         "ytmusic-responsive-list-item-renderer .title, ytmusic-responsive-list-item-renderer .subtitle"
       )
-      .forEach((el) => {
+      .forEach((el, idx) => {
+        if (idx > 50) return;
         const t = el.textContent.trim();
         if (t) pieces.push(t);
       });
@@ -627,8 +738,8 @@ function collectSummaryText(hostKey) {
       "";
     const headerSub =
       document
-        .querySelector("[data-testid='entity-subtitle']")?.textContent?.trim() ||
-      "";
+        .querySelector("[data-testid='entity-subtitle']")
+        ?.textContent?.trim() || "";
 
     if (headerTitle) pieces.push(headerTitle);
     if (headerSub) pieces.push(headerSub);
@@ -658,14 +769,17 @@ function collectSummaryText(hostKey) {
 
   if (hostKey === "bandcamp.com") {
     const album =
-      document.querySelector("#name-section .trackTitle")?.textContent?.trim() ||
-      "";
+      document
+        .querySelector("#name-section .trackTitle")
+        ?.textContent?.trim() || "";
     const artist =
       document
-        .querySelector("#name-section .artist")?.textContent?.trim() || "";
+        .querySelector("#name-section .artist")
+        ?.textContent?.trim() || "";
     const desc =
       document
-        .querySelector("#trackInfo, .tralbum-about")?.textContent?.trim() || "";
+        .querySelector("#trackInfo, .tralbum-about")
+        ?.textContent?.trim() || "";
     pieces.push(album, artist, desc);
   }
 

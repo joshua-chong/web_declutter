@@ -41,33 +41,44 @@ async function init() {
     r.checked = r.value === settings.moodMethod;
   });
 
-  // Listeners
-  function updateAndNotify() {
-    const newSettings = {
-      masterEnabled: document.getElementById("masterToggle").checked,
-      hidePromos: document.getElementById("hidePromos").checked,
-      reduceMotion: document.getElementById("reduceMotion").checked,
-      minimalLayout: document.getElementById("minimalLayout").checked,
-      moodFilterEnabled: document.getElementById("enableMoodFilter").checked,
-      showListeningTime: document.getElementById("showListeningTime").checked,
-      targetMinutes: Number(document.getElementById("targetMinutes").value) || 0,
-      enableSummary: document.getElementById("enableSummary").checked,
-      blockedEmotions: Array.from(
-        document.querySelectorAll(".emotion-toggle:checked")
-      ).map(cb => cb.value),
-      moodMethod: document.querySelector("input[name='moodMethod']:checked").value
-    };
+function updateAndNotify() {
+  const newSettings = {
+    masterEnabled: document.getElementById("masterToggle").checked,
+    hidePromos: document.getElementById("hidePromos").checked,
+    reduceMotion: document.getElementById("reduceMotion").checked,
+    minimalLayout: document.getElementById("minimalLayout").checked,
+    moodFilterEnabled: document.getElementById("enableMoodFilter").checked,
+    showListeningTime: document.getElementById("showListeningTime").checked,
+    targetMinutes: Number(document.getElementById("targetMinutes").value) || 0,
+    enableSummary: document.getElementById("enableSummary").checked,
+    blockedEmotions: Array.from(
+      document.querySelectorAll(".emotion-toggle:checked")
+    ).map(cb => cb.value),
+    moodMethod: document.querySelector("input[name='moodMethod']:checked").value
+  };
 
-    saveSettings(newSettings);
+  saveSettings(newSettings);
 
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      if (!tabs[0]) return;
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: "APPLY_SETTINGS",
-        payload: newSettings
-      });
-    });
-  }
+  // Detect specifically if masterEnabled changed
+  const masterChanged = (newSettings.masterEnabled !== settings.masterEnabled);
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { type: "APPLY_SETTINGS", payload: newSettings },
+      () => {
+        // If "Enable on this site" is toggled → reload the tab
+        if (masterChanged) {
+          chrome.tabs.reload(tabs[0].id);
+        }
+      }
+    );
+  });
+
+  // Update local copy
+  Object.assign(settings, newSettings);
+}
+
 
   document.querySelectorAll("input").forEach(el => {
     el.addEventListener("change", updateAndNotify);

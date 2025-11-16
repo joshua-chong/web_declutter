@@ -63,9 +63,20 @@
   max-width: 650px;
 }
 
-.nf-music-active {
-  /* Helps us target certain states */
+body.nf-music-active {
+  --nf-active: 1;
+  --nf-accent: rgba(0, 0, 0, 0.04);
+  --nf-contrast: rgba(0, 0, 0, 0.65);
 }
+
+/* Audio-only album cover */
+.nf-audio-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 
 /**********************************************
  * MINIMAL LAYOUT MODE (Global)
