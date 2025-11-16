@@ -1,0 +1,215 @@
+/**********************************************
+ * GLOBAL EXTENSION CLASSES
+ **********************************************/
+
+.nf-hidden-element {
+  display: none !important;
+}
+
+.nf-blurred-tile {
+  filter: blur(6px) brightness(0.6);
+  position: relative !important;
+  pointer-events: none;
+}
+
+.nf-blurred-tile .nf-mood-chip {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 12px;
+  font-weight: 500;
+  pointer-events: auto;
+}
+
+.nf-blurred-tile * {
+  pointer-events: none !important;
+}
+
+.nf-blurred-tile.nf-revealed {
+  filter: none !important;
+  pointer-events: auto !important;
+}
+
+.nf-listening-time-badge {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  z-index: 99999999;
+  backdrop-filter: blur(6px);
+}
+
+.nf-summary-box {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 450;
+  color: #222;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-width: 650px;
+}
+
+.nf-music-active {
+  /* Helps us target certain states */
+}
+
+/**********************************************
+ * MINIMAL LAYOUT MODE (Global)
+ **********************************************/
+
+body.nf-minimal-layout *::-webkit-scrollbar {
+  display: none;
+}
+
+body.nf-minimal-layout {
+  overflow-x: hidden !important;
+}
+
+body.nf-minimal-layout .nf-hidden-element {
+  display: none !important;
+}
+
+/**********************************************
+ * YOUTUBE MUSIC SPECIFIC STYLING
+ **********************************************/
+
+body.nf-music-active.nf-music-youtube-com .nf-summary-box {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+body.nf-minimal-layout.nf-music-youtube-com ytmusic-guide-renderer {
+  display: none !important;
+}
+
+body.nf-minimal-layout.nf-music-youtube-com ytmusic-carousel-shelf-renderer {
+  display: none !important;
+}
+
+body.nf-minimal-layout.nf-music-youtube-com .ytmusic-related-panel,
+body.nf-minimal-layout.nf-music-youtube-com .ytmusic-comments-panel {
+  display: none !important;
+}
+
+body.nf-minimal-layout.nf-music-youtube-com ytmusic-player-bar-background {
+  opacity: 0 !important;
+}
+
+/**********************************************
+ * SPOTIFY WEB SPECIFIC STYLING
+ **********************************************/
+
+body.nf-minimal-layout.nf-open-spotify-com [data-testid="left-sidebar"],
+body.nf-minimal-layout.nf-open-spotify-com [data-testid="right-sidebar"],
+body.nf-minimal-layout.nf-open-spotify-com [aria-label="Friend activity"],
+body.nf-minimal-layout.nf-open-spotify-com [data-testid="visualizer"],
+body.nf-minimal-layout.nf-open-spotify-com [data-testid="now-playing-bar-background"] {
+  display: none !important;
+}
+
+body.nf-open-spotify-com .nf-summary-box {
+  margin-top: 12px;
+  margin-left: 16px;
+}
+
+/**********************************************
+ * SOUNDCLOUD SPECIFIC STYLING
+ **********************************************/
+
+body.nf-minimal-layout.nf-soundcloud-com .sidebarRight,
+body.nf-minimal-layout.nf-soundcloud-com .frontHero,
+body.nf-minimal-layout.nf-soundcloud-com .listenEngagement,
+body.nf-minimal-layout.nf-soundcloud-com .soundActions {
+  display: none !important;
+}
+
+body.nf-soundcloud-com .nf-summary-box {
+  margin-top: 10px;
+  margin-left: 8px;
+}
+
+/**********************************************
+ * BANDCAMP SPECIFIC STYLING
+ **********************************************/
+
+body.nf-minimal-layout.nf-bandcamp-com #band-navbar,
+body.nf-minimal-layout.nf-bandcamp-com .leftTop,
+body.nf-minimal-layout.nf-bandcamp-com .rightTop,
+body.nf-minimal-layout.nf-bandcamp-com .grid-merch,
+body.nf-minimal-layout.nf-bandcamp-com .recommended {
+  display: none !important;
+}
+
+body.nf-bandcamp-com .nf-summary-box {
+  margin-top: 8px;
+}
+
+/**********************************************
+ * REDUCE MOTION (Universal)
+ **********************************************/
+
+body.nf-music-active * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+video,
+canvas,
+img.animated,
+.animated-artwork {
+  animation: none !important;
+  transition: none !important;
+}
+
+html {
+  scroll-behavior: auto !important;
+}
+
+/**********************************************
+ * ACCESSIBILITY TWEAKS
+ **********************************************/
+
+.nf-font-large {
+  font-size: 120% !important;
+}
+
+.nf-font-xlarge {
+  font-size: 140% !important;
+}
+
+.nf-line-spacing {
+  line-height: 1.5 !important;
+}
+
+.nf-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 200, 0.15);
+  backdrop-filter: blur(4px);
+  z-index: 99998;
+}
+
+/**********************************************
+ * DEBUGGING (Optional — comment out on release)
+ **********************************************/
+
+/*
+.nf-debug {
+  outline: 2px solid magenta !important;
+}
+*/

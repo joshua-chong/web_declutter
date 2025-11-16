@@ -1,46 +1,77 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  const toggleButton = document.getElementById('toggle');
+const DEFAULT_SETTINGS = {
+  masterEnabled: true,
+  hidePromos: true,
+  reduceMotion: true,
+  minimalLayout: false,
+  moodFilterEnabled: false,
+  blockedEmotions: ["sadness"],
+  moodMethod: "rules",
+  showListeningTime: true,
+  targetMinutes: 25,
+  enableSummary: false
+};
 
-  // Load saved state
-  const { calmMode } = await chrome.storage.sync.get('calmMode');
-  updateButton(calmMode);
+function loadSettings() {
+  return new Promise(resolve => {
+    chrome.storage.sync.get(DEFAULT_SETTINGS, resolve);
+  });
+}
 
-  toggleButton.addEventListener('click', async () => {
-    const newState = !toggleButton.classList.contains('on');
-    await chrome.storage.sync.set({ calmMode: newState });
-    updateButton(newState);
+function saveSettings(settings) {
+  chrome.storage.sync.set(settings);
+}
 
-    // Run content script
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: toggleCalmMode,
-      args: [newState],
-    });
+async function init() {
+  const settings = await loadSettings();
+
+  // Wire UI from settings
+  document.getElementById("masterToggle").checked = settings.masterEnabled;
+  document.getElementById("hidePromos").checked = settings.hidePromos;
+  document.getElementById("reduceMotion").checked = settings.reduceMotion;
+  document.getElementById("minimalLayout").checked = settings.minimalLayout;
+  document.getElementById("enableMoodFilter").checked = settings.moodFilterEnabled;
+  document.getElementById("showListeningTime").checked = settings.showListeningTime;
+  document.getElementById("targetMinutes").value = settings.targetMinutes;
+  document.getElementById("enableSummary").checked = settings.enableSummary;
+
+  document.querySelectorAll(".emotion-toggle").forEach(cb => {
+    cb.checked = settings.blockedEmotions.includes(cb.value);
+  });
+  document.querySelectorAll("input[name='moodMethod']").forEach(r => {
+    r.checked = r.value === settings.moodMethod;
   });
 
-  function updateButton(isOn) {
-    toggleButton.textContent = isOn ? 'Disable Calm Mode' : 'Enable Calm Mode';
-    toggleButton.classList.toggle('on', isOn);
-    toggleButton.classList.toggle('off', !isOn);
-  }
-});
+  // Listeners
+  function updateAndNotify() {
+    const newSettings = {
+      masterEnabled: document.getElementById("masterToggle").checked,
+      hidePromos: document.getElementById("hidePromos").checked,
+      reduceMotion: document.getElementById("reduceMotion").checked,
+      minimalLayout: document.getElementById("minimalLayout").checked,
+      moodFilterEnabled: document.getElementById("enableMoodFilter").checked,
+      showListeningTime: document.getElementById("showListeningTime").checked,
+      targetMinutes: Number(document.getElementById("targetMinutes").value) || 0,
+      enableSummary: document.getElementById("enableSummary").checked,
+      blockedEmotions: Array.from(
+        document.querySelectorAll(".emotion-toggle:checked")
+      ).map(cb => cb.value),
+      moodMethod: document.querySelector("input[name='moodMethod']:checked").value
+    };
 
-function toggleCalmMode(isOn) {
-  if (isOn) {
-    // Apply calm mode
-    document.body.style.backgroundColor = '#F5F5F5';
-    document.body.style.color = '#222';
-    document.body.style.fontFamily = "'OpenDyslexic', Arial, sans-serif";
-    document.querySelectorAll('video, iframe, [role="banner"], [class*="ad"], [id*="ad"]').forEach(el => el.remove());
-    document.querySelectorAll('*').forEach(el => {
-      el.style.animation = 'none';
-      el.style.transition = 'none';
+    saveSettings(newSettings);
+
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (!tabs[0]) return;
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: "APPLY_SETTINGS",
+        payload: newSettings
+      });
     });
-    console.log('✅ Calm Mode enabled');
-  } else {
-    // Reload to restore normal layout
-    window.location.reload();
-    console.log('🌀 Calm Mode disabled');
   }
+
+  document.querySelectorAll("input").forEach(el => {
+    el.addEventListener("change", updateAndNotify);
+  });
 }
+
+document.addEventListener("DOMContentLoaded", init);

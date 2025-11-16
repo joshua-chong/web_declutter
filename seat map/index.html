@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accessible Seat Map Table</title>
+
+  <style>
+    body {
+      background-color: #f9fafb;
+      color: #222;
+      font-family: "OpenDyslexic", "Arial Rounded MT Bold", Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+    }
+
+    thead {
+      background-color: #e0e7ff; 
+      text-align: left;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      font-size: 1rem;
+    }
+
+    th {
+      font-weight: bold;
+      letter-spacing: 0.02em;
+      border-bottom: 2px solid #c7d2fe;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f3f4f6;
+    }
+
+    tr:hover {
+      background-color: #e5e7eb;
+    }
+
+    tr:focus-within {
+      outline: 2px solid #6366f1;
+    }
+
+    .inactive {
+      color: #9ca3af;
+      background-color: #f9fafb !important;
+    }
+
+    td:focus {
+      outline: 2px solid #6366f1;
+      background-color: #eef2ff;
+    }
+
+    .path {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #4b5563;
+      word-break: break-all;
+    }
+
+    .calm-toggle {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background-color: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4f46e5;
+    }
+
+    button:focus {
+      outline: 3px solid #818cf8;
+    }
+
+    .calm-mode {
+      background-color: #f5f5f5;
+      color: #111;
+    }
+
+    .calm-mode table {
+      background-color: #fafafa;
+      box-shadow: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="calm-toggle">
+    <button id="toggleCalm">🌿 Toggle Calm Mode</button>
+  </div>
+
+  <h1>Neurodivergent-Friendly Seating Overview</h1>
+
+  <table role="table" aria-label="Accessible seating sections table">
+    <thead>
+      <tr>
+        <th scope="col">Seat ID</th>
+        <th scope="col">Section Name</th>
+        <th scope="col">Status</th>
+        <th scope="col">Path Data (SVG)</th>
+      </tr>
+    </thead>
+    <tbody id="seatTable"></tbody>
+  </table>
+
+  <script>
+    async function loadTable() {
+      try {
+        const response = await fetch('sections.json');
+        const data = await response.json();
+
+        const tableBody = document.getElementById("seatTable");
+
+        data.forEach(item => {
+          const row = document.createElement("tr");
+          if (!item.active) row.classList.add("inactive");
+
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.active ? "✅ Active" : "❌ Inactive"}</td>
+            <td class="path">${item.path_d}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error("Error loading sections.json:", err);
+      }
+    }
+
+    loadTable();
+
+    document.getElementById("toggleCalm").addEventListener("click", () => {
+      document.body.classList.toggle("calm-mode");
+    });
+  </script>
+
+</body>
+</html>

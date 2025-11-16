@@ -1,22 +1,52 @@
 {
   "manifest_version": 3,
-  "name": "Declutterer",
-  "version": "1.1",
-  "description": "A toggleable calm-mode declutterer for neurodivergent users — removes sensory overload and simplifies pages.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "name": "Neurofriendly Music",
+  "description": "Accessibility tools for neurodivergent listeners on music websites.",
+  "version": "0.1.0",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://music.youtube.com/*",
+    "https://open.spotify.com/*",
+    "https://soundcloud.com/*",
+    "https://*.bandcamp.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "128": "icons/calm.png"
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "https://music.youtube.com/*",
+        "https://open.spotify.com/*",
+        "https://soundcloud.com/*",
+        "https://*.bandcamp.com/*"
+      ],
       "js": ["content.js"],
-      "css": ["style.css"]
+      "css": ["content.css"]
     }
-  ],
-  "icons": {
-  }
+  ]
 }
