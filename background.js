@@ -1,118 +1,56 @@
-// ===============================
-// Vercel Proxy Endpoint (secured)
-// ===============================
-const HF_PROXY_URL =
-  "https://declutter-proxy.vercel.app/api/hf-proxy";  // <-- Your Vercel endpoint
+// background.js
 
-// Your secret — must match PROXY_SECRET in Vercel dashboard
+// Your deployed Vercel endpoint:
+const HF_PROXY_URL = "https://declutter-proxy.vercel.app/api/hf-proxy";
+
+// MUST match PROXY_SECRET on Vercel
 const PROXY_SECRET = "JOSHUA_CHONG_336978";
 
-
-// ===============================
-// Message Listener (MAIN)
-// ===============================
+// Listen for messages from content.js
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
-  // ---- Emotion Classification ----
-  if (message.type === "CLASSIFY_MOOD") {
-    classifyMood(message.payload.text, message.payload.method)
-      .then(result => {
-        console.log("Classifier result:", result);
-        sendResponse(result);
-      })
-      .catch(err => {
-        console.error("Classifier error:", err);
-        sendResponse({ emotion: null });
-      });
-    return true;
-  }
-
-  // ---- Playlist Summary ----
-  if (message.type === "SUMMARISE_PLAYLIST") {
-    summariseText(message.payload.text)
+  if (message?.type === "CLASSIFY_MOOD") {
+    classifyMood(message.text)
       .then(result => sendResponse(result))
       .catch(err => {
-        console.error("Summary error:", err);
+        console.error("CLASSIFY_MOOD error:", err);
+        sendResponse({ emotion: null });
+      });
+    return true; // async
+  }
+
+  if (message?.type === "SUMMARISE_TEXT") {
+    summariseText(message.text)
+      .then(result => sendResponse(result))
+      .catch(err => {
+        console.error("SUMMARISE_TEXT error:", err);
         sendResponse({ summary: null });
       });
     return true;
   }
 });
 
-
-// ===============================
-// Simple rules-based fallback
-// ===============================
-const RULES_LEXICON = {
-  sadness: ["sad", "cry", "tears", "lonely", "heartbreak"],
-  anger: ["rage", "angry", "furious", "revenge", "hate"],
-  fear: ["scared", "fear", "haunted", "nightmare", "horror"]
-};
-
-
-// ===============================
-// CLASSIFY MOOD
-// ===============================
-function classifyMood(text, method) {
-  if (method === "rules") {
-    return Promise.resolve(classifyMoodRules(text));
-  }
-  return classifyMoodML(text);
-}
-
-function classifyMoodRules(text) {
-  const lower = text.toLowerCase();
-  const scores = { sadness: 0, anger: 0, fear: 0 };
-
-  Object.entries(RULES_LEXICON).forEach(([emotion, words]) => {
-    words.forEach(word => {
-      if (lower.includes(word)) scores[emotion] += 1;
-    });
-  });
-
-  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  if (!best || best[1] === 0) return { emotion: null };
-  return { emotion: best[0] };
-}
-
-
-// ===============================
-// ML CLASSIFIER via Vercel Proxy
-// ===============================
-async function classifyMoodML(text) {
+// ----- Emotion via proxy -----
+async function classifyMood(text) {
   const res = await fetch(HF_PROXY_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-proxy-secret": PROXY_SECRET
     },
-    body: JSON.stringify({
-      task: "emotion",
-      text: text,
-      endpoint: "https://router.huggingface.co/hf-inference/models/j-hartmann/emotion-english-distilroberta-base"
-    })
+    body: JSON.stringify({ task: "emotion", text })
   });
 
   const data = await res.json();
-  console.log("Proxy response:", data);
-
-  if (!data || !data.data || !Array.isArray(data.data)) {
+  if (!data.outputs || !Array.isArray(data.outputs)) {
+    console.warn("Bad emotion response:", data);
     return { emotion: null };
   }
 
-  const outputs = data.data;
-
-  const best = outputs.reduce((a, b) => (b.score > a.score ? b : a), outputs[0]);
-
-  return best.score >= 0.4
-    ? { emotion: best.label.toLowerCase() }
-    : { emotion: null };
+  const best = data.outputs.reduce((a, b) => (b.score > a.score ? b : a));
+  return { emotion: best.label.toLowerCase(), score: best.score };
 }
 
-
-// ===============================
-// SUMMARY via Vercel Proxy
-// ===============================
+// ----- Summary via proxy -----
 async function summariseText(text) {
   const res = await fetch(HF_PROXY_URL, {
     method: "POST",
@@ -120,20 +58,13 @@ async function summariseText(text) {
       "Content-Type": "application/json",
       "x-proxy-secret": PROXY_SECRET
     },
-    body: JSON.stringify({
-      task: "summary",
-      text: text,
-      endpoint: "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
-      parameters: { max_length: 80, min_length: 25 }
-    })
+    body: JSON.stringify({ task: "summary", text })
   });
 
   const data = await res.json();
-  console.log("Summary proxy response:", data);
-
-  if (data.summary) {
-    return { summary: data.summary };
+  if (!data.summary) {
+    console.warn("Bad summary response:", data);
+    return { summary: null };
   }
-
-  return { summary: null };
+  return { summary: data.summary };
 }

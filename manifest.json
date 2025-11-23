@@ -1,48 +1,30 @@
 {
   "manifest_version": 3,
-  "name": "Neurofriendly Music",
-  "description": "Accessibility tools for neurodivergent listeners on music websites.",
-  "version": "0.1.0",
+  "name": "Neurofriendly YT Music (Minimal)",
+  "version": "0.0.1",
+
   "permissions": [
-    "storage",
-    "declarativeNetRequest",
-    "scripting",
-    "tabs"
+    "storage"
   ],
+
   "host_permissions": [
-    "https://*.youtube.com/*",
     "https://music.youtube.com/*",
-    "https://open.spotify.com/*",
-    "https://soundcloud.com/*",
-    "https://*.bandcamp.com/*",
-    "https://your-vercel-app-name.vercel.app/*"
+    "https://declutter-proxy.vercel.app/*"
   ],
+
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ruleset_1",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
+
   "content_scripts": [
     {
-      "matches": [
-        "https://music.youtube.com/*",
-        "https://open.spotify.com/*",
-        "https://soundcloud.com/*",
-        "https://*.bandcamp.com/*"
-      ],
+      "matches": ["https://music.youtube.com/*"],
       "js": ["content.js"],
-      "css": ["content.css"]
+      "css": ["popup.css"]
     }
-  ]
+  ],
+
+  "action": {
+    "default_popup": "popup.html"
+  }
 }

@@ -2,73 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Neurofriendly Music</title>
+  <title>Neurofriendly YT Music</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header>
-    <h1>Neurofriendly Music</h1>
-    <label>
-      <input type="checkbox" id="masterToggle">
-      Enable on this site
-    </label>
-  </header>
-
-  <section>
-    <h2>Distraction & Visual Load</h2>
-    <label>
-      <input type="checkbox" id="hidePromos">
-      Hide promos & upsell banners
-    </label>
-    <label>
-      <input type="checkbox" id="reduceMotion">
-      Reduce animations & video previews
-    </label>
-    <label>
-      <input type="checkbox" id="minimalLayout">
-      Minimal layout (queue & controls only)
-    </label>
-  </section>
-
-  <section>
-    <h2>Mood Guard</h2>
-    <label>
-      <input type="checkbox" id="enableMoodFilter">
-      Blur emotionally heavy playlists / tracks
-    </label>
-    <div class="subgroup">
-      <span>Block emotions:</span><br>
-      <label><input type="checkbox" class="emotion-toggle" value="sadness"> Sadness</label>
-      <label><input type="checkbox" class="emotion-toggle" value="anger"> Anger</label>
-      <label><input type="checkbox" class="emotion-toggle" value="fear"> Fear</label>
-    </div>
-    <div class="subgroup">
-      <span>Method:</span><br>
-      <label><input type="radio" name="moodMethod" value="rules" checked> Fast (rules)</label>
-      <label><input type="radio" name="moodMethod" value="ml"> AI model</label>
-    </div>
-  </section>
-
-  <section>
-    <h2>Session Planning</h2>
-    <label>
-      <input type="checkbox" id="showListeningTime">
-      Show total listening time for queue / playlist
-    </label>
-    <label>
-      Target session (minutes):
-      <input type="number" id="targetMinutes" min="5" step="5">
-    </label>
-  </section>
-
-  <section>
-    <h2>AI Vibe Summary</h2>
-    <label>
-      <input type="checkbox" id="enableSummary">
-      Show AI summary of playlists / albums
-    </label>
-  </section>
-
-  <script src="popup.js"></script>
+  <h1>Neurofriendly YT Music</h1>
+  <p>Always-on demo:</p>
+  <ul>
+    <li>✔ Ad / video declutter</li>
+    <li>✔ Mood filter (blur sadness)</li>
+    <li>✔ AI playlist summary</li>
+  </ul>
+  <p class="hint">Works on <strong>music.youtube.com</strong>.</p>
 </body>
 </html>
