@@ -1,18 +1,18 @@
 // ===============================
-// HuggingFace API Endpoints
+// Vercel Proxy Endpoint (secured)
 // ===============================
-const HUGGINGFACE_EMOTION_URL =
-  "https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base";
+const HF_PROXY_URL =
+  "https://declutter-proxy.vercel.app/api/hf-proxy";  // <-- Your Vercel endpoint
 
-const HUGGINGFACE_SUMMARY_URL =
-  "https://api-inference.huggingface.co/models/facebook/bart-large-cnn";
-
+// Your secret — must match PROXY_SECRET in Vercel dashboard
+const PROXY_SECRET = "JOSHUA_CHONG_336978";
 
 
 // ===============================
 // Message Listener (MAIN)
 // ===============================
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
   // ---- Emotion Classification ----
   if (message.type === "CLASSIFY_MOOD") {
     classifyMood(message.payload.text, message.payload.method)
@@ -24,15 +24,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.error("Classifier error:", err);
         sendResponse({ emotion: null });
       });
-
-    return true; // async response
+    return true;
   }
 
   // ---- Playlist Summary ----
   if (message.type === "SUMMARISE_PLAYLIST") {
     summariseText(message.payload.text)
       .then(result => sendResponse(result))
-      .catch(() => sendResponse({ summary: null }));
+      .catch(err => {
+        console.error("Summary error:", err);
+        sendResponse({ summary: null });
+      });
     return true;
   }
 });
@@ -52,7 +54,7 @@ const RULES_LEXICON = {
 // CLASSIFY MOOD
 // ===============================
 function classifyMood(text, method) {
-  if (method === "rules" || !HF_API_KEY) {
+  if (method === "rules") {
     return Promise.resolve(classifyMoodRules(text));
   }
   return classifyMoodML(text);
@@ -73,52 +75,64 @@ function classifyMoodRules(text) {
   return { emotion: best[0] };
 }
 
+
+// ===============================
+// ML CLASSIFIER via Vercel Proxy
+// ===============================
 async function classifyMoodML(text) {
-  const res = await fetch(HUGGINGFACE_EMOTION_URL, {
+  const res = await fetch(HF_PROXY_URL, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${HF_API_KEY}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "x-proxy-secret": PROXY_SECRET
     },
-    body: JSON.stringify({ inputs: text, options: { wait_for_model: true } })
+    body: JSON.stringify({
+      task: "emotion",
+      text: text,
+      endpoint: "https://router.huggingface.co/hf-inference/models/j-hartmann/emotion-english-distilroberta-base"
+    })
   });
 
   const data = await res.json();
-  const outputs = Array.isArray(data) ? data[0] : data;
+  console.log("Proxy response:", data);
 
-  if (!Array.isArray(outputs)) return { emotion: null };
+  if (!data || !data.data || !Array.isArray(data.data)) {
+    return { emotion: null };
+  }
 
-  const best = outputs.reduce((acc, cur) =>
-    cur.score > acc.score ? cur : acc, outputs[0]
-  );
+  const outputs = data.data;
 
-  return best.score >= 0.5
+  const best = outputs.reduce((a, b) => (b.score > a.score ? b : a), outputs[0]);
+
+  return best.score >= 0.4
     ? { emotion: best.label.toLowerCase() }
     : { emotion: null };
 }
 
 
 // ===============================
-// SUMMARISE TEXT
+// SUMMARY via Vercel Proxy
 // ===============================
 async function summariseText(text) {
-  const res = await fetch(HUGGINGFACE_SUMMARY_URL, {
+  const res = await fetch(HF_PROXY_URL, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${HF_API_KEY}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "x-proxy-secret": PROXY_SECRET
     },
     body: JSON.stringify({
-      inputs: text,
-      parameters: { max_length: 80, min_length: 25 },
-      options: { wait_for_model: true }
+      task: "summary",
+      text: text,
+      endpoint: "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
+      parameters: { max_length: 80, min_length: 25 }
     })
   });
 
   const data = await res.json();
+  console.log("Summary proxy response:", data);
 
-  if (Array.isArray(data) && data[0]?.summary_text) {
-    return { summary: data[0].summary_text };
+  if (data.summary) {
+    return { summary: data.summary };
   }
 
   return { summary: null };

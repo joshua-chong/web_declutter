@@ -10,10 +10,12 @@
     "tabs"
   ],
   "host_permissions": [
+    "https://*.youtube.com/*",
     "https://music.youtube.com/*",
     "https://open.spotify.com/*",
     "https://soundcloud.com/*",
-    "https://*.bandcamp.com/*"
+    "https://*.bandcamp.com/*",
+    "https://your-vercel-app-name.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js",

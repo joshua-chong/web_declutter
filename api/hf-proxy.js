@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // --- SECURITY CHECK (shared secret) ---
+  // --- SECURITY CHECK ---
   const clientSecret = req.headers["x-proxy-secret"];
   const serverSecret = process.env.PROXY_SECRET;
 
@@ -22,14 +22,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized: invalid proxy secret" });
   }
 
-  // --- Parse request body ---
-  const { text, task } = req.body;
+  // --- Parse input ---
+  const { text, task, parameters } = req.body;
 
   if (!text || !task) {
     return res.status(400).json({ error: "Missing text or task parameter" });
   }
 
-  // Select HF model
+  // Select model
   const MODEL = task === "emotion"
     ? "j-hartmann/emotion-english-distilroberta-base"
     : "facebook/bart-large-cnn";
@@ -37,13 +37,14 @@ export default async function handler(req, res) {
   const HF_API_KEY = process.env.HF_API_KEY;
 
   if (!HF_API_KEY) {
-    return res.status(500).json({ error: "Missing HuggingFace API Key" });
+    return res.status(500).json({ error: "Missing HuggingFace API key" });
   }
 
-  // --- Call HuggingFace ---
-  const hfResponse = await fetch(
-    `https://api-inference.huggingface.co/models/${MODEL}`,
-    {
+  // --- USE NEW HF ROUTER ENDPOINT ---
+  const HF_URL = `https://router.huggingface.co/hf-inference/models/${MODEL}`;
+
+  try {
+    const hfResponse = await fetch(HF_URL, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${HF_API_KEY}`,
@@ -51,14 +52,18 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         inputs: text,
-        parameters: task === "summary"
-          ? { max_length: 80, min_length: 25 }
-          : {},
-        options: { wait_for_model: true }
+        parameters: parameters || {},
+        options: {
+          wait_for_model: true,
+          use_cache: false
+        }
       })
-    }
-  );
+    });
 
-  const data = await hfResponse.json();
-  return res.status(200).json({ data });
+    const data = await hfResponse.json();
+    return res.status(200).json({ data });
+
+  } catch (err) {
+    return res.status(500).json({ error: "HF request failed", details: err });
+  }
 }
